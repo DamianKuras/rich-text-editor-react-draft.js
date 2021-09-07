@@ -1,0 +1,9 @@
+.editor{
+  min-height: 600px;
+  border: 1px solid red;
+  padding: 1em;
+}
+
+.editor-container{
+  position: relative;
+}
