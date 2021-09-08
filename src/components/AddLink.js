@@ -21,9 +21,9 @@ export default class AddLink extends React.Component {
             urlInput =
               <div>
                 <input
-                  onChange={this.onURLChange}
-                
+                  onChange={this.onURLChange} 
                   type="text"
+                  ref="url"
                   value={this.state.urlValue}
                   onKeyDown={this.onLinkInputKeyDown}
                 />
@@ -68,6 +68,8 @@ export default class AddLink extends React.Component {
           this.setState({
             showURLInput: true,
             urlValue: url,
+          }, () => {
+            setTimeout(() => this.refs.url.focus(), 0);
           });
 
         }
@@ -96,7 +98,7 @@ export default class AddLink extends React.Component {
         const contentState = editorState.getCurrentContent();
         const contentStateWithEntity = contentState.createEntity(
         'LINK',
-        'MUTABLE',
+        'IMMUTABLE',
         {url: urlValue}
         );
         const entityKey = contentStateWithEntity.getLastCreatedEntityKey();

@@ -47,6 +47,7 @@ export default class RichTextEditor extends React.Component{
           <div className="editor" onClick={this.focus}> 
             <Editor
             className="editor"
+              blockRendererFn={mediaBlockRenderer}
               editorState={this.state.editorState}
               onChange={this.onChange} 
               onTab={this.onTab}
@@ -69,12 +70,9 @@ function findImageEnitites(contentBlock, callback, contentState) {
     callback
   );
 }
-const Image = (props) =>{
-  const {url} = props.contentState.getEntity(props.entityKey).getData();
-  return(
-    <img src={url}/>
-  )
-}
+const Image = (props) => {
+  return <img src={props.src} />;
+};
 function findLinkEntities(contentBlock, callback, contentState) {
   contentBlock.findEntityRanges(
     (character) => {
@@ -95,4 +93,30 @@ const Link = (props) => {
       {props.children}
     </a>
   );
+};
+
+function mediaBlockRenderer(block) {
+  if (block.getType() === 'atomic') {
+    return {
+      component: Media,
+      editable: false,
+      
+    };
+  }
+
+  return null;
+}
+const Media = (props) => {
+  const entity = props.contentState.getEntity(
+    props.block.getEntityAt(0)
+  );
+  const {src} = entity.getData();
+  const type = entity.getType();
+
+  let media;
+  if (type === 'image') {
+    media = <Image src={src} />;
+  } 
+
+  return media;
 };

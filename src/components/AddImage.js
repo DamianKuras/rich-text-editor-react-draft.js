@@ -1,116 +1,91 @@
 import React from 'react';
-import { CompositeDecorator,RichUtils,EditorState } from 'draft-js';
+import { AtomicBlockUtils,CompositeDecorator,RichUtils,EditorState } from 'draft-js';
 
 export default class AddImage extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            showURLInput: false,
-            urlValue: '',
-        }
-        this.promptForLink = this.promptForLink.bind(this);
-        this.confirmLink = this.confirmLink.bind(this);
-        this.removeLink = this.removeLink .bind(this);
-        this.onURLChange = (e) => this.setState({urlValue: e.target.value});
-        this.onLinkInputKeyDown = this.onLinkInputKeyDown.bind(this);
+  constructor(props){
+    super(props);
+    this.state = {
+      showURLInput: false,
+      url: '',
+      urlType: '',
     }
-    render() {
-        let urlInput;
-        if (this.state.showURLInput){
-            urlInput =
-              <div>
-                <input
-                  onChange={this.onURLChange}
-                
-                  type="text"
-                  value={this.state.urlValue}
-                  onKeyDown={this.onLinkInputKeyDown}
-                />
-                <button onMouseDown={this.confirmLink}>
-                  Confirm
-                </button>
-              </div>;
-        }
-        return(
-            <div>
-                <button
-                    onMouseDown={this.promptForLink}
-                    style={{marginRight: 10}}>
-                    Add Link
-                </button>
-                <button onMouseDown={this.removeLink}>
-                  Remove Link
-                </button>
-                {urlInput}
-            </div>
-           
-        )
-    }
+    this.addImage = this.addImage.bind(this);
+    this.confirmMedia = this.confirmMedia.bind(this);
+    this.onURLInputKeyDown = this.onURLInputKeyDown.bind(this);
+    this.onURLChange = (e) => this.setState({urlValue: e.target.value});
+  }
 
-    promptForLink(e){
-        e.preventDefault();
-        const {editorState} = this.props;
-        const selection = editorState.getSelection();
-        if (!selection.isCollapsed()) {
-          const contentState = editorState.getCurrentContent();
-          const startKey = editorState.getSelection().getStartKey();
-          const startOffset = editorState.getSelection().getStartOffset();
-          const blockWithLinkAtBeginning = contentState.getBlockForKey(startKey);
-          const linkKey = blockWithLinkAtBeginning.getEntityAt(startOffset);
 
-          let url = '';
-          if (linkKey) {
-            const linkInstance = contentState.getEntity(linkKey);
-            url = linkInstance.getData().url;
-          }
-
-          this.setState({
-            showURLInput: true,
-            urlValue: url,
-          });
-        }
+  confirmMedia(e) {
+    e.preventDefault();
+    const{editorState} = this.props;
+    const {urlValue, urlType} = this.state;
+    console.log({urlValue});
+    const contentState = editorState.getCurrentContent();
+    const contentStateWithEntity = contentState.createEntity(
+      urlType,
+      'IMMUTABLE',
+      {src: urlValue}
+    );
+    const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+    const newEditorState = EditorState.set(
+      editorState,
+      {currentContent: contentStateWithEntity}
+    );
+    let newState=AtomicBlockUtils.insertAtomicBlock(
+      newEditorState,
+      entityKey,
+      ' '
+    )
+    this.props.updateDocument(newState);
+    this.setState({
+      showURLInput: false,
+      urlValue: '',
+    }, () => {
+      setTimeout(() => this.props.focusEditor(), 500);
+    });
+  }
+  onURLInputKeyDown(e) {
+    if (e.which === 13) {
+      this.confirmMedia(e);
     }
-    removeLink(e) {
-        e.preventDefault();
-        const {editorState} = this.props;
-        const selection = editorState.getSelection();
-        if (!selection.isCollapsed()) {
-            this.setState({
-            editorState: RichUtils.toggleLink(editorState, selection, null),
-            });
-        }
+  }
+  addImage() {
+    this.promptForMedia('image');
+  }
+  promptForMedia(type) {
+    this.setState({
+      showURLInput: true,
+      urlValue: '',
+      urlType: type,
+    }, () => {
+      setTimeout(() => this.refs.url.focus(), 0);
+    });
+  }
+  render(){
+    let urlInput;
+    if (this.state.showURLInput) {
+      urlInput =
+        <div>
+          <input
+            onChange={this.onURLChange}
+            ref="url"
+            type="text"
+            value={this.state.urlValue}
+            onKeyDown={this.onURLInputKeyDown}
+          />
+          <button onMouseDown={this.confirmMedia}>
+            Confirm
+          </button>
+        </div>;
     }
-    onLinkInputKeyDown(e) {
-        if (e.which === 13) {
-          this.confirmLink(e);
-        }
-      }
-    confirmLink(e){
-        e.preventDefault();
-        const{editorState,updateDocument} = this.props;
-        const{urlValue} = this.state;
-        const contentState = editorState.getCurrentContent();
-        const contentStateWithEntity = contentState.createEntity(
-        'LINK',
-        'MUTABLE',
-        {url: urlValue}
-        );
-        const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
-        const newEditorState = EditorState.set(editorState, { currentContent: contentStateWithEntity });
-        let newState = RichUtils.toggleLink(
-            newEditorState,
-            newEditorState.getSelection(),  
-            entityKey
-        );
-        this.setState({
-            showURLInput: false,
-            urlValue: '',
-        })
-        if(newState){
-            updateDocument(newState);
-        }
-
-        console.log(newState)
-    }
+    return(
+      <div>
+      <button onMouseDown={this.addImage} style={{marginRight: 10}}>
+        Add Image
+      </button>
+      {urlInput}
+      </div>
+    )
+  }
 }
